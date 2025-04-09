@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -29,3 +30,24 @@ func TestGetAllTasks_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Contains(t, rr.Body.String(), "Test Task")
 }
+
+// test POST /tasks with missing reminder date
+func TestAddTask_MissingReminderDate(t *testing.T) {
+	db, _, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	// Missing reminder_date
+	body := `{"title": "Test Task", "description": "Missing date"}`
+	req := httptest.NewRequest(http.MethodPost, "/tasks", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	handler := TasksHandler(db)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Reminder date is required")
+}
+
+// test DELETE /tasks/{id} success
