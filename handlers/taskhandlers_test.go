@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Test for GET /tasks endpoint
+// This test checks if the endpoint returns a 200 OK status and the expected task data.
 func TestGetAllTasks_Success(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.NoError(t, err)
@@ -32,6 +34,7 @@ func TestGetAllTasks_Success(t *testing.T) {
 }
 
 // test POST /tasks with missing reminder date
+// This test checks if the endpoint returns a 400 Bad Request status when the reminder date is missing.
 func TestAddTask_MissingReminderDate(t *testing.T) {
 	db, _, err := sqlmock.New()
 	assert.NoError(t, err)
@@ -51,3 +54,21 @@ func TestAddTask_MissingReminderDate(t *testing.T) {
 }
 
 // test DELETE /tasks/{id} success
+// This test checks if the endpoint returns a 200 OK status when the task is successfully deleted.
+func TestDeleteTask_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectExec("DELETE FROM tasks WHERE id = \\$1").
+		WithArgs(1).
+		WillReturnResult(sqlmock.NewResult(1, 1)) // 1 row affected
+
+	req := httptest.NewRequest(http.MethodDelete, "/tasks/1", nil)
+	rr := httptest.NewRecorder()
+
+	handler := DeleteTask(db)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusNoContent, rr.Code)
+}
